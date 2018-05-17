@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.senate.apiobjects.Image;
+import com.senate.apiobjects.Images;
 
 import java.net.*;
 import java.util.*;
@@ -25,7 +27,7 @@ import javax.net.ssl.HttpsURLConnection;
  * java -cp .;gson-2.8.1.jar BingImageSearch
  */
 
-public class BingImageSearch {
+class BingImageSearch {
 
     // Replace the subscriptionKey string value with your valid subscription key.
 
@@ -34,12 +36,12 @@ public class BingImageSearch {
     // search APIs.  In the future, regional endpoints may be available.  If you
     // encounter unexpected authorization errors, double-check this value against
     // the endpoint for your Bing Web search instance in your Azure dashboard.
-    static String host = "https://api.cognitive.microsoft.com";
-    static String path = "/bing/v7.0/images/search";
+    private static String host = "https://api.cognitive.microsoft.com";
+    private static String path = "/bing/v7.0/images/search";
 
 
     //search method
-    public static SearchResults SearchImages (String searchQuery) throws Exception {
+    private static SearchResults SearchImages(String searchQuery) throws Exception {
         // construct URL of search request (endpoint + query string)
         URL url = new URL(host + path + "?q=" +  URLEncoder.encode(searchQuery, "UTF-8")+"&safeSearch=Off");
         HttpsURLConnection connection = (HttpsURLConnection)url.openConnection();
@@ -50,7 +52,7 @@ public class BingImageSearch {
         String response = new Scanner(stream).useDelimiter("\\A").next();
 
         // construct result object for return
-        SearchResults results = new SearchResults(new HashMap<String, String>(), response);
+        SearchResults results = new SearchResults(new HashMap<>(), response);
 
         // extract Bing-related HTTP headers
         Map<String, List<String>> headers = connection.getHeaderFields();
@@ -66,14 +68,14 @@ public class BingImageSearch {
     }
 
     // pretty-printer for JSON; uses GSON parser to parse and re-serialize
-    public static String prettify(String json_text) {
+    private static String prettify(String json_text) {
         JsonParser parser = new JsonParser();
         JsonObject json = parser.parse(json_text).getAsJsonObject();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         return gson.toJson(json);
     }
 
-    public static String search (String query) {
+    static String search(String query) {
         if (Keys.bingKey.length() != 32) {
             System.out.println("Invalid Bing Search API subscription key!");
             System.out.println("Please paste yours into the source code.");
