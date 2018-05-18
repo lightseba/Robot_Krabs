@@ -8,6 +8,7 @@ import net.dv8tion.jda.core.JDABuilder;
 import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.core.events.message.MessageUpdateEvent;
 import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.core.exceptions.PermissionException;
 import net.dv8tion.jda.core.exceptions.RateLimitedException;
@@ -17,10 +18,13 @@ import net.dv8tion.jda.core.managers.GuildController;
 import javax.security.auth.login.LoginException;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 public class BingListener extends ListenerAdapter {
 
     private boolean selfListening = false;
+    private boolean timerUp = false;
+    private Member victim;
     private int yesVotes;
     private int noVotes;
 
@@ -65,6 +69,31 @@ public class BingListener extends ListenerAdapter {
             System.out.println("no");
         }
 
+
+    }
+
+    @Override
+    public void onMessageUpdate(MessageUpdateEvent event){
+
+        Message message = event.getMessage();
+        MessageChannel channel = event.getChannel();
+
+        if(timerUp && event.getGuild().getMember(message.getAuthor()).equals(event.getGuild().getSelfMember())){
+            timerUp = false;
+
+            Guild guild = event.getGuild();
+            Role binks = guild.getRolesByName("Representative Binks", false).get(0);
+            GuildController gc = guild.getController();
+
+            if(yesVotes > noVotes){
+                channel.sendMessage("dab").queue();
+                gc.modifyMemberRoles(victim, binks).queue();
+            } else {
+                channel.sendMessage("they're safe").queue();
+            }
+
+            victim = null;
+        }
 
     }
 
@@ -166,6 +195,7 @@ public class BingListener extends ListenerAdapter {
                     Member selfMember = guild.getSelfMember();
                     GuildController gc = guild.getController();
 
+                    victim = victimMember;
                     if(selfMember.hasPermission(Permission.MANAGE_ROLES)){
 
                         //gc.modifyMemberRoles(victimMember, binks).queue();
@@ -202,26 +232,25 @@ public class BingListener extends ListenerAdapter {
             message.addReaction("\uD83D\uDC4D").queue();
             message.addReaction("\uD83D\uDC4E").queue();
 
+            message.editMessage("it is done").queueAfter(30, TimeUnit.SECONDS);
 
-
-            try { Thread.sleep(30 * 1000); } catch (InterruptedException e) { e.printStackTrace(); }
+            timerUp = true;
 
             System.out.println("huh");
 
 
-            MessageReceivedEvent mre = new MessageReceivedEvent(event.getJDA(), event.getResponseNumber(),message);
-
-
-            if(yesVotes > noVotes){
-                channel.sendMessage("dab").queue();
-                gc.modifyMemberRoles(victimMember, binks).queue();
-            } else {
-                channel.sendMessage("they're safe").queue();
-            }
+//            if(yesVotes > noVotes){
+//                channel.sendMessage("dab").queue();
+//                gc.modifyMemberRoles(victimMember, binks).queue();
+//            } else {
+//                channel.sendMessage("they're safe").queue();
+//            }
 
 
 
         }
+
+
 
 
         else if (msg.equals("!roll"))
