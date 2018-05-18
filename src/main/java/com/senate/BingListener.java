@@ -8,15 +8,21 @@ import net.dv8tion.jda.core.JDABuilder;
 import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.core.exceptions.PermissionException;
 import net.dv8tion.jda.core.exceptions.RateLimitedException;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
+import net.dv8tion.jda.core.managers.GuildController;
 
 import javax.security.auth.login.LoginException;
 import java.util.List;
 import java.util.Random;
 
 public class BingListener extends ListenerAdapter {
+
+    private boolean selfListening = false;
+    private int yesVotes;
+    private int noVotes;
 
     public static void main(String[] args)
     {
@@ -44,6 +50,23 @@ public class BingListener extends ListenerAdapter {
         }
     }
 
+    @Override
+    public void onMessageReactionAdd(MessageReactionAddEvent event) {
+
+        MessageReaction reaction = event.getReaction();
+
+        System.out.println(reaction.getReactionEmote().getName());
+
+        if(reaction.getReactionEmote().getName().equals("\uD83D\uDC4D")){
+            yesVotes++;
+            System.out.println("yes");
+        } else if (reaction.getReactionEmote().getName().equals("\uD83D\uDC4E")){
+            noVotes++;
+            System.out.println("no");
+        }
+
+
+    }
 
 
     @Override
@@ -118,10 +141,89 @@ public class BingListener extends ListenerAdapter {
             // By calling queue(), we send the Request to the Requester which will send it to discord. Using queue() or any
             // of its different forms will handle ratelimiting for you automatically!
 
+
+
             String query = msg.substring(6);
             String url = BingImageSearch.search(query);
             channel.sendMessage(url).queue();
+
         }
+
+        else if(msg.length() > 7 && msg.startsWith("!vbinks")){
+
+            if (message.isFromType(ChannelType.TEXT)){
+
+                if (message.getMentionedUsers().isEmpty() || message.getMentionedUsers().size() > 1){
+                    channel.sendMessage("mention one victim stupid").queue();
+                    return;
+                }
+                else{
+
+                    Guild guild = event.getGuild();
+                    User victimUser = message.getMentionedUsers().get(0);
+                    Member victimMember = guild.getMember(victimUser);
+                    Role binks = guild.getRolesByName("Representative Binks", false).get(0);
+                    Member selfMember = guild.getSelfMember();
+                    GuildController gc = guild.getController();
+
+                    if(selfMember.hasPermission(Permission.MANAGE_ROLES)){
+
+                        //gc.modifyMemberRoles(victimMember, binks).queue();
+
+                        channel.sendMessage("shall we binks ")
+                                .append(victimMember.getAsMention())
+                                .append("? vote with thumbs up or down")
+                                .queue();
+
+                        selfListening = true;
+
+                    }
+
+                }
+
+            }
+
+        }
+
+
+        if(selfListening && event.getGuild().getMember(message.getAuthor()).equals(event.getGuild().getSelfMember())){
+
+            selfListening = false;
+
+            Guild guild = event.getGuild();
+            User victimUser = message.getMentionedUsers().get(0);
+            Member victimMember = guild.getMember(victimUser);
+            Role binks = guild.getRolesByName("Representative Binks", false).get(0);
+            GuildController gc = guild.getController();
+
+            yesVotes = 0;
+            noVotes = 0;
+
+            message.addReaction("\uD83D\uDC4D").queue();
+            message.addReaction("\uD83D\uDC4E").queue();
+
+
+
+            try { Thread.sleep(30 * 1000); } catch (InterruptedException e) { e.printStackTrace(); }
+
+            System.out.println("huh");
+
+
+            MessageReceivedEvent mre = new MessageReceivedEvent(event.getJDA(), event.getResponseNumber(),message);
+
+
+            if(yesVotes > noVotes){
+                channel.sendMessage("dab").queue();
+                gc.modifyMemberRoles(victimMember, binks).queue();
+            } else {
+                channel.sendMessage("they're safe").queue();
+            }
+
+
+
+        }
+
+
         else if (msg.equals("!roll"))
         {
             //In this case, we have an example showing how to use the Success consumer for a RestAction. The Success consumer
