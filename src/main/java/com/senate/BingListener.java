@@ -7,6 +7,7 @@ import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.JDABuilder;
 import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.*;
+import net.dv8tion.jda.core.events.guild.voice.GuildVoiceJoinEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.core.events.message.MessageUpdateEvent;
 import net.dv8tion.jda.core.events.message.react.MessageReactionAddEvent;
@@ -52,6 +53,22 @@ public class BingListener extends ListenerAdapter {
             // you use buildBlocking in a thread that has the possibility of being interrupted (async thread usage and interrupts)
             e.printStackTrace();
         }
+
+
+
+    }
+
+    @Override
+    public void onGuildVoiceJoin(GuildVoiceJoinEvent event){
+
+        System.out.println(event.getMember().getEffectiveName());
+        Guild guild = event.getGuild();
+        Role binks = guild.getRolesByName("Representative Binks", false).get(0);
+        Role chair = guild.getRolesByName("Vice Chair", false).get(0);
+        GuildController gc = guild.getController();
+
+        gc.removeRolesFromMember(event.getMember(), binks).queue();
+        gc.addRolesToMember(event.getMember(), chair).queue();
     }
 
     @Override
@@ -176,6 +193,8 @@ public class BingListener extends ListenerAdapter {
             String url = BingImageSearch.search(query);
             channel.sendMessage(url).queue();
 
+            message.delete().queueAfter(1,TimeUnit.MINUTES);
+
         }
 
         else if(msg.length() > 7 && msg.startsWith("!vbinks")){
@@ -212,6 +231,18 @@ public class BingListener extends ListenerAdapter {
                 }
 
             }
+
+        } else if (msg.equals("!heck")){
+
+
+            Guild guild = event.getGuild();
+            Role binks = guild.getRolesByName("Representative Binks", false).get(0);
+            Role chair = guild.getRolesByName("Vice Chair", false).get(0);
+            GuildController gc = guild.getController();
+
+            gc.removeRolesFromMember(guild.getMember(author), binks).queue();
+            gc.addRolesToMember(guild.getMember(author), chair).queue();
+
 
         }
 
